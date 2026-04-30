@@ -1,9 +1,6 @@
 # Demo Walkthroughs
 
-## Created by Erik Mack
-
-
-Collection of demo walkthrough resources organized by AWS service.
+Collection of demo walkthrough resources organized by AWS service.  I use these walkthroughs and content for demos I do with my customers.
 
 ## Structure
 
@@ -14,3 +11,6 @@ service-name/
   demo-walkthrough/
     walkthrough.html
 ```
+
+---
+Maintained by Erik Mack
