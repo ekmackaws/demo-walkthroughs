@@ -11,3 +11,4 @@ service-name/
   demo-walkthrough/
     walkthrough.html
 ```
+Created by Erik Mack
