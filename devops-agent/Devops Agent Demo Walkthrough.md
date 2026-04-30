@@ -382,6 +382,8 @@ Web app access: **Admin access** (quick, 10-min session from console) or **IAM I
 ## 🧹 Post-Demo Cleanup
 
 1. Go to **CloudFormation** → select **AWS-DevOpsAgent-EC2-Test** → **Delete**
+
+
 2. This removes all test resources (EC2, security group, IAM role, alarm)
 
 > 💡 The instance also auto-shuts down after 2 hours if you forget.
