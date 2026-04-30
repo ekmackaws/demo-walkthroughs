@@ -1,0 +1,91 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AWS DevOps Agent EC2 CPU Test Stack'
+Resources:
+  SSMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: AWS-DevOpsAgent-Test-SSM-Role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Tags:
+        - Key: Purpose
+          Value: AWS-DevOpsAgent-Testing
+  SSMInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref SSMRole
+  TestSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: AWS DevOps Agent beta testing security group
+      VpcId: vpc-04a1e29b8e8b46410
+      Tags:
+        - Key: Name
+          Value: AWS-DevOpsAgent-Test-SG
+        - Key: Purpose
+          Value: AWS-DevOpsAgent-Testing
+  TestInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t3.micro
+      ImageId: '{{resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64}}'
+      KeyName: ErikPair
+      IamInstanceProfile: !Ref SSMInstanceProfile
+      SubnetId: subnet-03a7d580b91d83400
+      SecurityGroupIds:
+        - !Ref TestSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          yum install -y htop
+          cat > /home/ec2-user/cpu-stress-test.sh << 'EOF'
+          #!/bin/bash
+          echo "Starting AWS DevOpsAgent CPU Stress Test"
+          CORES=$(nproc)
+          for i in $(seq 1 $CORES); do
+              (yes > /dev/null) &
+              echo $! >> /tmp/cpu_test_pids
+          done
+          (sleep 300 && kill $(cat /tmp/cpu_test_pids 2>/dev/null) 2>/dev/null && rm -f /tmp/cpu_test_pids) &
+          echo "CPU load started for 5 minutes"
+          EOF
+          chmod +x /home/ec2-user/cpu-stress-test.sh
+          chown ec2-user:ec2-user /home/ec2-user/cpu-stress-test.sh
+
+      Tags:
+        - Key: Name
+          Value: AWS-DevOpsAgent-Test-Instance
+        - Key: Purpose
+          Value: AWS-DevOpsAgent-Testing
+  CPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: AWS-DevOpsAgent-EC2-CPU-Test
+      AlarmDescription: AWS-DevOpsAgent beta test - EC2 CPU utilization alarm
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 70
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref TestInstance
+      TreatMissingData: notBreaching
+Outputs:
+  InstanceId:
+    Description: EC2 Instance ID
+    Value: !Ref TestInstance
+  AlarmName:
+    Description: CloudWatch Alarm Name
+    Value: !Ref CPUAlarm
