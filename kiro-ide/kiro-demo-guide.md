@@ -288,3 +288,5 @@ Type **/aws-investigator** in chat followed by your request.
 | Subagents | ~1 min (create .md file) | ~3 min |
 
 **Total: ~26 minutes**
+
+
